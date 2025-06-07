@@ -330,9 +330,14 @@
         style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); margin-top: 15px;">
         重置游戏
       </button>
+      <button class="btn danger" id="clearHistoryBtn" onclick="clearHistoricalLeaderboard()"
+        style="margin-top: 15px; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+        清除历史排行榜
+      </button>
       <div
         style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 0.9rem; color: #856404;">
-        <strong>注意：</strong>重置游戏将清除所有用户数据，请谨慎使用！
+        <strong>注意：</strong>重置游戏将清除所有用户数据，请谨慎使用！<br>
+        <strong>清除历史排行榜：</strong>将永久删除所有历史游戏记录，无法恢复！
       </div>
 
       <h3 style="margin-top: 30px; margin-bottom: 15px;">在线用户</h3>
@@ -494,8 +499,45 @@
 
     // 重置游戏
     function resetGame() {
+      if (!confirm('确定要重置游戏吗？这将清除所有用户数据！')) {
+        return;
+      }
       socket.emit('resetGame');
     }
+
+    // 新增：清除历史排行榜
+    function clearHistoricalLeaderboard() {
+      if (!confirm('确定要清除历史排行榜吗？\n\n⚠️ 警告：这将永久删除所有历史游戏记录，无法恢复！\n\n请输入"确认删除"继续')) {
+        return;
+      }
+
+      const confirmation = prompt('请输入"确认删除"以继续清除历史排行榜：');
+      if (confirmation !== '确认删除') {
+        alert('操作已取消');
+        return;
+      }
+
+      socket.emit('clearHistoricalLeaderboard');
+    }
+
+    // 监听操作结果
+    socket.on('operationResult', (data) => {
+      if (data.success) {
+        alert(`✅ ${data.message}`);
+        if (data.operation === 'clearHistoricalLeaderboard') {
+          // 刷新排行榜显示
+          updateLeaderboard([]);
+        }
+      } else {
+        alert(`❌ 操作失败：${data.message}`);
+      }
+    });
+
+    // 监听历史排行榜统计信息
+    socket.on('historicalStats', (stats) => {
+      console.log('历史排行榜统计:', stats);
+      // 可以在这里更新UI显示历史统计信息
+    });
 
     // 更新用户显示
     function updateUsersDisplay() {
@@ -868,8 +910,10 @@
 
     // 页面加载时获取当前状态
     window.addEventListener('load', () => {
-      // 可以在这里添加获取当前游戏状态的逻辑
       console.log('管理后台已加载');
+
+      // 获取历史排行榜统计信息
+      socket.emit('getHistoricalStats');
     });
   </script>
 </body>

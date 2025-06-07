@@ -347,10 +347,52 @@
     }
 
     .user-name {
-      font-size: 1.8rem;
+      font-size: 1.1rem;
       font-weight: 700;
-      color: white;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      margin-bottom: 5px;
+      color: #ffffff;
+    }
+
+    .user-status {
+      margin-left: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-online {
+      background: rgba(0, 255, 65, 0.2);
+      color: #00ff41;
+      border: 1px solid rgba(0, 255, 65, 0.3);
+      animation: onlinePulse 2s infinite;
+    }
+
+    .status-completed {
+      background: rgba(150, 150, 150, 0.2);
+      color: #cccccc;
+      border: 1px solid rgba(150, 150, 150, 0.3);
+    }
+
+    @keyframes onlinePulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    .completion-info {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 8px;
+      font-style: italic;
     }
 
     .rank-item.rank-1 .user-name {
@@ -628,10 +670,54 @@
     });
 
     socket.on('gameReset', () => {
-      currentLeaderboard = [];
+      // 游戏重置时不清空排行榜，只刷新数据
+      loadLeaderboardData();
+      updateTime.textContent = `游戏重置: ${new Date().toLocaleTimeString()}`;
+    });
+
+    socket.on('historicalLeaderboardCleared', (data) => {
+      console.log('历史排行榜已被清除:', data.message);
       showEmptyState();
       updateStats([]);
+      updateTime.textContent = `历史记录已清除: ${new Date().toLocaleTimeString()}`;
     });
+
+    // 加载排行榜数据
+    function loadLeaderboardData() {
+      // 优先获取合并的排行榜数据（包含在线用户和历史用户）
+      fetch('/api/leaderboard')
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            currentLeaderboard = data;
+            updateLeaderboard(data);
+            updateStats(data);
+            updateTime.textContent = `数据加载: ${new Date().toLocaleTimeString()}`;
+          } else {
+            showEmptyState();
+          }
+        })
+        .catch(error => {
+          console.log('获取排行榜数据失败:', error);
+          // 如果合并数据获取失败，尝试获取历史数据
+          fetch('/api/historical-leaderboard')
+            .then(response => response.json())
+            .then(historicalData => {
+              if (historicalData && historicalData.length > 0) {
+                currentLeaderboard = historicalData;
+                updateLeaderboard(historicalData);
+                updateStats(historicalData);
+                updateTime.textContent = `历史数据: ${new Date().toLocaleTimeString()}`;
+              } else {
+                showEmptyState();
+              }
+            })
+            .catch(err => {
+              console.log('获取历史排行榜数据也失败:', err);
+              showEmptyState();
+            });
+        });
+    }
 
     // 更新排行榜显示
     function updateLeaderboard(leaderboard) {
@@ -642,15 +728,25 @@
 
       let html = `
         <div class="leaderboard">
-          <h2>🏆 实时排名 🏆</h2>
+          <h2>🏆 荣耀排行榜 🏆</h2>
           <div class="rank-list">
       `;
 
-      leaderboard.slice(0, 10).forEach((user, index) => {
+      leaderboard.slice(0, 20).forEach((user, index) => {
         const rank = index + 1;
         const rankClass = rank <= 3 ? `rank-${rank}` : '';
         const rankIcons = { 1: '👑', 2: '🥈', 3: '🥉' };
         const rankIcon = rankIcons[rank] || '';
+
+        // 状态标识
+        const statusIcon = user.isOnline ? '🟢' : '⚫';
+        const statusText = user.isOnline ? '在线' : '已完成';
+        const statusClass = user.isOnline ? 'status-online' : 'status-completed';
+
+        // 完成时间显示
+        const completedTime = user.completedAt ?
+          `完成时间: ${new Date(user.completedAt).toLocaleString()}` :
+          `当前进度: ${user.currentQuestion}/${user.totalQuestions}`;
 
         html += `
           <div class="rank-item ${rankClass}">
@@ -659,12 +755,20 @@
             <div class="rank-number">${rank}</div>
             
             <div class="user-info">
-              <div class="user-name">${user.name}</div>
+              <div class="user-name">
+                ${user.name}
+                <span class="user-status ${statusClass}">
+                  ${statusIcon} ${statusText}
+                </span>
+              </div>
               <div class="user-id">学号: ${user.studentId}</div>
               <div class="user-stats">
                 <span>✓ ${user.correctAnswers} 正确</span>
                 <span>✗ ${user.totalAnswers - user.correctAnswers} 错误</span>
                 <span>准确率 ${Math.round((user.correctAnswers / user.totalAnswers) * 100) || 0}%</span>
+              </div>
+              <div class="completion-info">
+                ${completedTime}
               </div>
             </div>
             
@@ -716,21 +820,13 @@
 
     // 页面加载时的初始化
     window.addEventListener('load', () => {
-      showEmptyState();
       console.log('荣耀排行榜展示页面已加载');
 
-      // 获取当前排行榜数据
-      fetch('/api/leaderboard')
-        .then(response => response.json())
-        .then(data => {
-          if (data && data.length > 0) {
-            updateLeaderboard(data);
-            updateStats(data);
-          }
-        })
-        .catch(error => {
-          console.log('获取初始排行榜数据失败:', error);
-        });
+      // 加载排行榜数据
+      loadLeaderboardData();
+
+      // 每30秒自动刷新一次数据
+      setInterval(loadLeaderboardData, 30000);
     });
 
     // 保持连接活跃

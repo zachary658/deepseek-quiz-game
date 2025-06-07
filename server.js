@@ -149,6 +149,8 @@ let gameState = {
 // 性能优化：用户数据存储优化
 let users = new Map();
 let leaderboard = [];
+// 新增：持久化历史排行榜 - 用户完成游戏后永久保存
+let historicalLeaderboard = [];
 let gameTimer = null;
 
 // 性能优化：批处理和缓存
@@ -225,6 +227,22 @@ app.get('/api/leaderboard', (req, res) => {
   res.json(getCachedLeaderboard().slice(0, 10));
 });
 
+// 新增：获取历史排行榜API
+app.get('/api/historical-leaderboard', (req, res) => {
+  const sortedHistorical = historicalLeaderboard
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return a.totalTime - b.totalTime; // 分数相同时，时间短者排名靠前
+    })
+    .map((entry, index) => ({
+      ...entry,
+      rank: index + 1
+    }));
+  res.json(sortedHistorical.slice(0, 20)); // 显示前20名
+});
+
 // 性能优化：排行榜缓存系统
 function getCachedLeaderboard() {
   const now = Date.now();
@@ -238,25 +256,53 @@ function getCachedLeaderboard() {
 }
 
 function calculateLeaderboard() {
-  return Array.from(users.values())
-    .sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-      const aTime = a.answers.reduce((sum, ans) => sum + ans.timeSpent, 0);
-      const bTime = b.answers.reduce((sum, ans) => sum + ans.timeSpent, 0);
-      return aTime - bTime;
-    })
-    .map((user, index) => ({
-      rank: index + 1,
+  // 获取当前在线用户
+  const currentUsers = Array.from(users.values())
+    .map((user) => ({
+      rank: 0, // 临时排名，后面会重新计算
       name: user.name,
       studentId: user.studentId,
       score: user.score,
       totalAnswers: user.answers.length,
       correctAnswers: user.answers.filter(ans => ans.isCorrect).length,
       currentQuestion: user.currentQuestionIndex,
-      totalQuestions: TOTAL_QUESTIONS
+      totalQuestions: TOTAL_QUESTIONS,
+      isOnline: true,
+      completedAt: null
     }));
+
+  // 获取历史完成用户
+  const historicalUsers = historicalLeaderboard.map((entry) => ({
+    rank: 0, // 临时排名，后面会重新计算
+    name: entry.name,
+    studentId: entry.studentId,
+    score: entry.score,
+    totalAnswers: entry.totalAnswers,
+    correctAnswers: entry.correctAnswers,
+    currentQuestion: TOTAL_QUESTIONS, // 历史用户都是完成的
+    totalQuestions: TOTAL_QUESTIONS,
+    isOnline: false,
+    completedAt: entry.completedAt,
+    totalTime: entry.totalTime
+  }));
+
+  // 合并并排序
+  const allUsers = [...currentUsers, ...historicalUsers]
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      // 分数相同时按时间排序
+      const aTime = a.totalTime || (a.answers ? a.answers.reduce((sum, ans) => sum + ans.timeSpent, 0) : 0);
+      const bTime = b.totalTime || (b.answers ? b.answers.reduce((sum, ans) => sum + ans.timeSpent, 0) : 0);
+      return aTime - bTime;
+    })
+    .map((user, index) => ({
+      ...user,
+      rank: index + 1
+    }));
+
+  return allUsers;
 }
 
 // 性能优化：批量更新系统
@@ -342,17 +388,35 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // 检查学号是否已经存在
-    const existingUserByStudentId = Array.from(users.values()).find(user => user.studentId === studentId.trim());
-    if (existingUserByStudentId) {
-      socket.emit('joinError', { message: '该学号已经参与游戏，不允许重复参与' });
+    // 检查当前在线用户中是否已存在相同学号
+    const existingOnlineUserByStudentId = Array.from(users.values()).find(user => user.studentId === studentId.trim());
+    if (existingOnlineUserByStudentId) {
+      socket.emit('joinError', { message: '该学号已经在线参与游戏，不允许重复参与' });
       return;
     }
 
-    // 检查姓名是否已经存在
-    const existingUserByName = Array.from(users.values()).find(user => user.name === name.trim());
-    if (existingUserByName) {
-      socket.emit('joinError', { message: '该姓名已经参与游戏，不允许重复参与' });
+    // 检查当前在线用户中是否已存在相同姓名
+    const existingOnlineUserByName = Array.from(users.values()).find(user => user.name === name.trim());
+    if (existingOnlineUserByName) {
+      socket.emit('joinError', { message: '该姓名已经在线参与游戏，不允许重复参与' });
+      return;
+    }
+
+    // 检查历史排行榜中是否已存在相同学号
+    const existingHistoricalUserByStudentId = historicalLeaderboard.find(entry => entry.studentId === studentId.trim());
+    if (existingHistoricalUserByStudentId) {
+      socket.emit('joinError', {
+        message: `该学号已经完成过游戏，得分:${existingHistoricalUserByStudentId.score}分，不允许重复参与`
+      });
+      return;
+    }
+
+    // 检查历史排行榜中是否已存在相同姓名
+    const existingHistoricalUserByName = historicalLeaderboard.find(entry => entry.name === name.trim());
+    if (existingHistoricalUserByName) {
+      socket.emit('joinError', {
+        message: `该姓名已经完成过游戏，得分:${existingHistoricalUserByName.score}分，不允许重复参与`
+      });
       return;
     }
 
@@ -387,6 +451,7 @@ io.on('connection', (socket) => {
     scheduleLeaderboardUpdate();
 
     console.log(`👤 用户 ${user.name}(${user.studentId}) 加入游戏`);
+    console.log(`✅ 验证通过：该用户首次参与游戏，当前历史记录数=${historicalLeaderboard.length}`);
 
     // 立即开始第一题
     startUserQuestion(socket, user, 0);
@@ -489,6 +554,32 @@ io.on('connection', (socket) => {
 
     // 检查用户是否完成所有题目
     if (user.currentQuestionIndex >= TOTAL_QUESTIONS) {
+      // 保存到历史排行榜（持久化记录）
+      const totalTime = user.answers.reduce((sum, ans) => sum + ans.timeSpent, 0);
+      const historicalEntry = {
+        name: user.name,
+        studentId: user.studentId,
+        score: user.score,
+        totalAnswers: user.answers.length,
+        correctAnswers: user.answers.filter(ans => ans.isCorrect).length,
+        totalTime: totalTime,
+        completedAt: new Date().toISOString(),
+        gameId: Date.now() + '-' + user.studentId // 唯一标识符
+      };
+
+      // 严格检查：既不能有相同学号，也不能有相同姓名
+      const existingByStudentId = historicalLeaderboard.findIndex(entry => entry.studentId === user.studentId);
+      const existingByName = historicalLeaderboard.findIndex(entry => entry.name === user.name);
+
+      if (existingByStudentId >= 0 || existingByName >= 0) {
+        // 理论上不应该发生，因为在加入时已经检查过了
+        console.log(`⚠️ 警告：用户 ${user.name}(${user.studentId}) 尝试保存重复记录，已忽略`);
+      } else {
+        // 新用户，直接添加
+        historicalLeaderboard.push(historicalEntry);
+        console.log(`🏆 用户 ${user.name}(${user.studentId}) 首次完成游戏，记录已保存! 得分:${user.score}`);
+      }
+
       socket.emit('userCompleted', {
         message: '您已完成所有题目！',
         finalScore: user.score,
@@ -512,6 +603,33 @@ io.on('connection', (socket) => {
   // 重置游戏（管理员专用）
   socket.on('resetGame', () => {
     resetGame();
+  });
+
+  // 新增：清除历史排行榜（管理员专用）
+  socket.on('clearHistoricalLeaderboard', () => {
+    const clearedCount = clearHistoricalLeaderboard();
+    socket.emit('operationResult', {
+      success: true,
+      message: `已清除 ${clearedCount} 条历史记录`,
+      operation: 'clearHistoricalLeaderboard'
+    });
+  });
+
+  // 新增：获取历史排行榜统计信息
+  socket.on('getHistoricalStats', () => {
+    socket.emit('historicalStats', {
+      totalRecords: historicalLeaderboard.length,
+      topScores: historicalLeaderboard
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map((entry, index) => ({
+          rank: index + 1,
+          name: entry.name,
+          studentId: entry.studentId,
+          score: entry.score,
+          completedAt: entry.completedAt
+        }))
+    });
   });
 
   // 用户断开连接
@@ -601,6 +719,32 @@ function startUserQuestion(socket, user, questionIndex) {
 
       // 检查是否完成所有题目
       if (user.currentQuestionIndex >= TOTAL_QUESTIONS) {
+        // 保存到历史排行榜（持久化记录）
+        const totalTime = user.answers.reduce((sum, ans) => sum + ans.timeSpent, 0);
+        const historicalEntry = {
+          name: user.name,
+          studentId: user.studentId,
+          score: user.score,
+          totalAnswers: user.answers.length,
+          correctAnswers: user.answers.filter(ans => ans.isCorrect).length,
+          totalTime: totalTime,
+          completedAt: new Date().toISOString(),
+          gameId: Date.now() + '-' + user.studentId // 唯一标识符
+        };
+
+        // 严格检查：既不能有相同学号，也不能有相同姓名
+        const existingByStudentId = historicalLeaderboard.findIndex(entry => entry.studentId === user.studentId);
+        const existingByName = historicalLeaderboard.findIndex(entry => entry.name === user.name);
+
+        if (existingByStudentId >= 0 || existingByName >= 0) {
+          // 理论上不应该发生，因为在加入时已经检查过了
+          console.log(`⚠️ 警告：用户 ${user.name}(${user.studentId}) 尝试保存重复记录，已忽略`);
+        } else {
+          // 新用户，直接添加
+          historicalLeaderboard.push(historicalEntry);
+          console.log(`🏆 用户 ${user.name}(${user.studentId}) 首次完成游戏，记录已保存! 得分:${user.score}`);
+        }
+
         socket.emit('userCompleted', {
           message: '您已完成所有题目！',
           finalScore: user.score,
@@ -653,6 +797,23 @@ function resetGame() {
   });
 
   console.log('🔄 游戏已重置，所有用户数据已清除');
+  console.log(`📚 历史排行榜保留 ${historicalLeaderboard.length} 条记录`);
+}
+
+// 新增：清除历史排行榜（管理员专用）
+function clearHistoricalLeaderboard() {
+  const clearedCount = historicalLeaderboard.length;
+  historicalLeaderboard = [];
+  leaderboardCache = null; // 清除缓存
+
+  // 通知所有客户端历史记录已清除
+  io.emit('historicalLeaderboardCleared', {
+    message: '历史排行榜已清除',
+    clearedCount: clearedCount
+  });
+
+  console.log(`🗑️ 管理员清除了 ${clearedCount} 条历史排行榜记录`);
+  return clearedCount;
 }
 
 // 性能监控和自动垃圾回收
