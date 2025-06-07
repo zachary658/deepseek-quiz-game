@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- 微信浏览器兼容性 -->
+  <meta name="applicable-device" content="mobile">
+  <meta name="mobile-agent" content="format=html5; url=https://m.example.com">
+  <title>DeepSeek技术知识挑战</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    .game-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .content {
+      padding: 30px;
+      min-height: 400px;
+    }
+
+    .join-form {
+      max-width: 400px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .input-group {
+      margin: 20px 0;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e1e8ed;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+      -webkit-appearance: none;
+      appearance: none;
+      box-sizing: border-box;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .error-message {
+      background: #ffe6e6;
+      color: #d63031;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border-left: 4px solid #d63031;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .game-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 10px 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+    }
+
+    .waiting {
+      text-align: center;
+      padding: 40px;
+      display: none;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .quiz-container {
+      display: none;
+    }
+
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%);
+      border-radius: 15px;
+      border: 2px solid #e1e8ed;
+    }
+
+    .question-number {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .question-timer {
+      background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 50px;
+      font-weight: bold;
+      font-size: 1.4rem;
+      box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+      transition: all 0.3s ease;
+      position: relative;
+      min-width: 80px;
+      text-align: center;
+      animation: pulse-gentle 2s infinite;
+      transform: scale(1);
+    }
+
+    /* 温和的脉动动画 */
+    @keyframes pulse-gentle {
+
+      0%,
+      100% {
+        transform: scale(1);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+      }
+
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 12px 35px rgba(76, 175, 80, 0.6);
+      }
+    }
+
+    /* 紧急跳动动画 */
+    @keyframes heartbeat {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      25% {
+        transform: scale(1.1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
+
+      75% {
+        transform: scale(1.15);
+      }
+    }
+
+    /* 最后倒计时的闪烁动画 */
+    @keyframes urgent-flash {
+
+      0%,
+      100% {
+        transform: scale(1);
+        background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);
+        box-shadow: 0 8px 30px rgba(255, 23, 68, 0.8);
+      }
+
+      50% {
+        transform: scale(1.2);
+        background: linear-gradient(135deg, #ff5722 0%, #ff1744 100%);
+        box-shadow: 0 15px 50px rgba(255, 23, 68, 1);
+      }
+    }
+
+    /* 倒计时状态样式 */
+    .question-timer.warning {
+      background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+      animation: heartbeat 1s infinite;
+      box-shadow: 0 10px 30px rgba(255, 152, 0, 0.6);
+    }
+
+    .question-timer.danger {
+      background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);
+      animation: urgent-flash 0.5s infinite;
+      box-shadow: 0 12px 40px rgba(255, 23, 68, 0.8);
+      font-size: 1.6rem;
+    }
+
+    /* 倒计时文字跳动效果 */
+    .question-timer .timer-text {
+      display: inline-block;
+      transition: all 0.2s ease;
+    }
+
+    .question-timer.danger .timer-text {
+      animation: bounce-text 0.3s infinite alternate;
+    }
+
+    @keyframes bounce-text {
+      0% {
+        transform: translateY(0);
+      }
+
+      100% {
+        transform: translateY(-3px);
+      }
+    }
+
+    /* 倒计时周围的光环效果 */
+    .question-timer::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      background: linear-gradient(135deg, transparent, rgba(76, 175, 80, 0.3), transparent);
+      border-radius: 50px;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .question-timer.warning::before {
+      background: linear-gradient(135deg, transparent, rgba(255, 152, 0, 0.4), transparent);
+      opacity: 1;
+    }
+
+    .question-timer.danger::before {
+      background: linear-gradient(135deg, transparent, rgba(255, 23, 68, 0.6), transparent);
+      opacity: 1;
+      animation: rotate-halo 1s linear infinite;
+    }
+
+    @keyframes rotate-halo {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(255, 23, 68, 0.3);
+      }
+
+      100% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(255, 23, 68, 0.5);
+      }
+    }
+
+    .question {
+      font-size: 1.3rem;
+      margin-bottom: 30px;
+      line-height: 1.6;
+      color: #2d3436;
+      font-weight: 600;
+    }
+
+    .options {
+      display: grid;
+      gap: 15px;
+    }
+
+    .option {
+      background: white;
+      border: 2px solid #e1e8ed;
+      border-radius: 15px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 1.1rem;
+    }
+
+    .option:hover {
+      border-color: #667eea;
+      background: #f8f9ff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    }
+
+    .option.selected {
+      border-color: #667eea;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .option.correct {
+      border-color: #00b894;
+      background: linear-gradient(135deg, #00b894 0%, #55a3ff 100%);
+      color: white;
+    }
+
+    .option.wrong {
+      border-color: #e17055;
+      background: linear-gradient(135deg, #e17055 0%, #fd79a8 100%);
+      color: white;
+    }
+
+    .option-letter {
+      background: rgba(255, 255, 255, 0.2);
+      color: inherit;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .option.selected .option-letter,
+    .option.correct .option-letter,
+    .option.wrong .option-letter {
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+
+    .answer-feedback {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .answer-feedback.correct {
+      background: linear-gradient(135deg, #00b894 0%, #55a3ff 100%);
+      color: white;
+    }
+
+    .answer-feedback.wrong {
+      background: linear-gradient(135deg, #e17055 0%, #fd79a8 100%);
+      color: white;
+    }
+
+    .score-display {
+      background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+      color: #2d3436;
+      padding: 15px;
+      border-radius: 15px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .score-display .score {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .result-container {
+      display: none;
+      text-align: center;
+    }
+
+    .final-score-preview {
+      background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 15px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .final-score-preview .score {
+      font-size: 3rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .connection-status {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 10px 15px;
+      border-radius: 20px;
+      color: white;
+      font-weight: bold;
+      z-index: 1000;
+      font-size: 14px;
+    }
+
+    .connection-status.connected {
+      background: linear-gradient(135deg, #00b894 0%, #55a3ff 100%);
+    }
+
+    .connection-status.disconnected {
+      background: linear-gradient(135deg, #e17055 0%, #fd79a8 100%);
+    }
+
+    .connection-status.connecting {
+      background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    }
+
+    .debug-info {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      max-width: 300px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    /* 移动端适配 */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .container {
+        border-radius: 15px;
+      }
+
+      .header {
+        padding: 20px;
+      }
+
+      .game-title {
+        font-size: 1.5rem;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .question-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+
+      .question {
+        font-size: 1.1rem;
+      }
+
+      .option {
+        padding: 15px;
+        font-size: 1rem;
+      }
+
+      .game-info {
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .game-info span {
+        font-size: 0.8rem;
+      }
+    }
+
+    /* 页面紧急状态的视觉效果 */
+    body.timer-warning {
+      animation: subtle-shake 0.5s ease-in-out infinite;
+    }
+
+    body.timer-danger {
+      animation: urgent-shake 0.2s ease-in-out infinite;
+    }
+
+    @keyframes subtle-shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-1px);
+      }
+
+      75% {
+        transform: translateX(1px);
+      }
+    }
+
+    @keyframes urgent-shake {
+
+      0%,
+      100% {
+        transform: translate(0);
+      }
+
+      10% {
+        transform: translate(-2px, -1px);
+      }
+
+      20% {
+        transform: translate(2px, 1px);
+      }
+
+      30% {
+        transform: translate(-1px, -2px);
+      }
+
+      40% {
+        transform: translate(1px, 2px);
+      }
+
+      50% {
+        transform: translate(-2px, 1px);
+      }
+
+      60% {
+        transform: translate(2px, -1px);
+      }
+
+      70% {
+        transform: translate(-1px, 2px);
+      }
+
+      80% {
+        transform: translate(1px, -2px);
+      }
+
+      90% {
+        transform: translate(-2px, -1px);
+      }
+    }
+
+    /* 问题区域的紧急效果 */
+    .quiz-container.timer-danger .question-header {
+      animation: border-flash 0.5s infinite;
+    }
+
+    @keyframes border-flash {
+
+      0%,
+      100% {
+        border-color: #e1e8ed;
+        box-shadow: 0 0 0 0 rgba(255, 23, 68, 0);
+      }
+
+      50% {
+        border-color: #ff1744;
+        box-shadow: 0 0 20px 5px rgba(255, 23, 68, 0.3);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 调试信息 -->
+  <div class="debug-info" id="debugInfo">调试信息...</div>
+
+  <!-- 连接状态 -->
+  <div class="connection-status connecting" id="connectionStatus">连接中...</div>
+
+  <div class="container">
+    <div class="header">
+      <h1 class="game-title">🎯 DeepSeek技术知识挑战</h1>
+      <div class="game-info">
+        <span>📚 15道DeepSeek专业题目，每题10秒限时</span>
+        <span>分数: <span id="scoreDisplay">0</span></span>
+        <span>排名: <span id="rankDisplay">-</span></span>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- 登录表单 -->
+      <div class="join-form" id="loginForm">
+        <h2>开始DeepSeek技术知识挑战</h2>
+        <p style="color: #666; margin-bottom: 25px; font-size: 0.95rem;">
+          🤖 测试你对DeepSeek大语言模型的技术理解<br>
+          ⚡ 15道专业题目，涵盖架构、训练、优化等核心技术<br>
+          ⏱️ 每题限时10秒，答对得10分，答错扣15分
+        </p>
+        <div class="input-group">
+          <input type="text" id="nameInput" placeholder="请输入真实姓名" maxlength="20" required>
+        </div>
+        <div class="input-group">
+          <input type="text" id="studentIdInput" placeholder="请输入学号" maxlength="20" required>
+        </div>
+        <div class="error-message" id="errorMessage" style="display: none;"></div>
+        <button class="btn" onclick="joinGame()">🚀 立即开始答题</button>
+      </div>
+
+      <!-- 等待游戏开始 -->
+      <div class="waiting" id="waiting">
+        <h2>准备开始答题...</h2>
+        <div class="spinner"></div>
+        <p>正在为您准备题目，请稍等...</p>
+      </div>
+
+      <!-- 答题界面 -->
+      <div class="quiz-container" id="quizContainer">
+        <div class="question-header">
+          <span class="question-number" id="questionNumber">题目 1/15</span>
+          <span class="question-timer" id="questionTimer">10s</span>
+        </div>
+
+        <div class="question" id="questionText">
+          题目加载中...
+        </div>
+
+        <div class="answer-feedback" id="answerFeedback">
+        </div>
+
+        <div class="options" id="optionsContainer">
+          <!-- 选项将通过JavaScript动态生成 -->
+        </div>
+
+        <div class="score-display" id="currentScore">
+          <div class="score">0</div>
+          <div>当前得分</div>
+        </div>
+      </div>
+
+      <!-- 结果页面 -->
+      <div class="result-container" id="resultContainer">
+        <h2>🎉 答题完成！</h2>
+
+        <div class="final-score-preview">
+          <div class="score" id="finalScore">0</div>
+          <div>最终得分</div>
+        </div>
+
+        <div style="margin: 20px 0;">
+          <p>正确题数: <span id="correctCount">0</span>/15</p>
+          <p>正确率: <span id="accuracy">0</span>%</p>
+          <p>您的排名: 第 <span id="finalRank">0</span> 名</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+          <p style="color: #666; margin: 0;">游戏已结束，感谢您的参与！</p>
+          <p style="color: #666; font-size: 0.9rem; margin: 5px 0 0 0;">如需重新答题，请联系管理员。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script>
+    // 全局变量定义
+    let debugMode = window.location.search.includes('debug=true');
+    let debugInfo = document.getElementById('debugInfo');
+    let connectionStatus = document.getElementById('connectionStatus');
+    let currentUser = null;
+    let currentQuestion = null;
+    let questionStartTime = null;
+    let questionTimer = null;
+    let timeLeft = 10;
+    let roomId = 'main-room';
+    let socket = null;
+
+    // 页面元素 - 在DOM加载后初始化
+    let loginForm, waiting, quizContainer, resultContainer, nameInput, studentIdInput;
+
+    // 初始化调试功能
+    if (debugMode) {
+      debugInfo.style.display = 'block';
+    }
+
+    function log(message) {
+      console.log(message);
+      if (debugMode && debugInfo) {
+        debugInfo.innerHTML += '<br>' + message;
+        debugInfo.scrollTop = debugInfo.scrollHeight;
+      }
+    }
+
+    function updateConnectionStatus(status, message) {
+      if (connectionStatus) {
+        connectionStatus.className = `connection-status ${status}`;
+        connectionStatus.textContent = message;
+      }
+      log(`连接状态: ${status} - ${message}`);
+    }
+
+    // DOM加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('DOM内容加载完成');
+
+      // 初始化页面元素
+      loginForm = document.getElementById('loginForm');
+      waiting = document.getElementById('waiting');
+      quizContainer = document.getElementById('quizContainer');
+      resultContainer = document.getElementById('resultContainer');
+      nameInput = document.getElementById('nameInput');
+      studentIdInput = document.getElementById('studentIdInput');
+      debugInfo = document.getElementById('debugInfo');
+      connectionStatus = document.getElementById('connectionStatus');
+
+      console.log('页面元素初始化完成');
+
+      // 检查Socket.io是否加载
+      if (typeof io === 'undefined') {
+        console.error('Socket.io未加载成功');
+        alert('网络连接失败，请刷新页面重试');
+        return;
+      }
+
+      // 初始化Socket.io连接
+      initializeSocket();
+
+      // 设置事件监听
+      if (nameInput) {
+        nameInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            joinGame();
+          }
+        });
+        nameInput.focus();
+      }
+    });
+
+    function initializeSocket() {
+      console.log('初始化Socket连接');
+
+      try {
+        // Socket.io 连接配置
+        socket = io({
+          timeout: 20000,
+          forceNew: true,
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5,
+          transports: ['websocket', 'polling']
+        });
+
+        log(`房间ID: ${roomId}`);
+
+        // Socket连接事件
+        socket.on('connect', () => {
+          updateConnectionStatus('connected', '已连接');
+          log('Socket连接成功');
+          console.log('Socket连接成功，Socket ID:', socket.id);
+        });
+
+        socket.on('disconnect', () => {
+          updateConnectionStatus('disconnected', '连接断开');
+          log('Socket连接断开');
+          console.log('Socket连接断开');
+        });
+
+        socket.on('connect_error', (error) => {
+          updateConnectionStatus('disconnected', '连接错误');
+          log(`连接错误: ${error.message}`);
+          console.error('Socket连接错误:', error);
+        });
+
+        socket.on('reconnecting', (attemptNumber) => {
+          updateConnectionStatus('connecting', `重连中(${attemptNumber})`);
+          log(`正在重连，尝试次数: ${attemptNumber}`);
+          console.log('Socket重连中，尝试次数:', attemptNumber);
+        });
+
+        // 游戏事件监听
+        setupGameEventListeners();
+
+        console.log('Socket初始化完成');
+      } catch (error) {
+        console.error('Socket初始化失败:', error);
+        alert('网络连接失败，请刷新页面重试');
+      }
+    }
+
+    function setupGameEventListeners() {
+      if (!socket) return;
+
+      // Socket事件监听
+      socket.on('joinSuccess', (data) => {
+        currentUser = data.user;
+
+        // 更新头部信息显示用户
+        const gameInfo = document.querySelector('.game-info');
+        if (gameInfo) {
+          gameInfo.innerHTML = `
+            <span>用户: ${currentUser.name}(${currentUser.studentId})</span>
+            <span>分数: <span id="scoreDisplay">0</span></span>
+            <span>排名: <span id="rankDisplay">-</span></span>
+          `;
+        }
+
+        log(`加入游戏成功`);
+
+        if (loginForm) loginForm.style.display = 'none';
+        if (waiting) waiting.style.display = 'block';
+      });
+
+      socket.on('joinError', (data) => {
+        log(`加入游戏失败: ${data.message}`);
+        const errorMessage = document.getElementById('errorMessage');
+        if (errorMessage) {
+          errorMessage.textContent = data.message;
+          errorMessage.style.display = 'block';
+        }
+
+        const joinBtn = document.querySelector('.btn');
+        if (joinBtn) {
+          joinBtn.disabled = false;
+          joinBtn.textContent = '🚀 立即开始答题';
+        }
+      });
+
+      socket.on('nextQuestion', (data) => {
+        log(`下一题: ${data.questionNumber}`);
+        if (waiting) waiting.style.display = 'none';
+        if (quizContainer) quizContainer.style.display = 'block';
+        showQuestion(data.question, data.questionNumber, data.totalQuestions, data.timeLimit);
+      });
+
+      socket.on('userCompleted', (data) => {
+        log(`用户完成所有题目`);
+        if (quizContainer) quizContainer.style.display = 'none';
+        if (resultContainer) resultContainer.style.display = 'block';
+
+        const finalScore = document.getElementById('finalScore');
+        const correctCount = document.getElementById('correctCount');
+        const accuracy = document.getElementById('accuracy');
+
+        if (finalScore) finalScore.textContent = data.finalScore;
+        if (correctCount) correctCount.textContent = data.correctAnswers;
+        if (accuracy) accuracy.textContent = Math.round((data.correctAnswers / data.totalQuestions) * 100);
+      });
+
+      socket.on('answerResult', (data) => {
+        log(`答案结果: ${data.isCorrect ? '正确' : '错误'}`);
+        showAnswerFeedback(data);
+        updateScore(data.totalScore);
+
+        setTimeout(() => {
+          const feedback = document.getElementById('answerFeedback');
+          if (feedback) feedback.style.display = 'none';
+          document.querySelectorAll('.option').forEach(option => {
+            option.classList.remove('selected', 'correct', 'wrong');
+            option.style.pointerEvents = 'auto';
+          });
+        }, 1500);
+      });
+
+      socket.on('timeUp', (data) => {
+        log(`超时事件`);
+        showTimeUpFeedback(data);
+        updateScore(data.totalScore);
+
+        if (questionTimer) {
+          clearInterval(questionTimer);
+          questionTimer = null;
+        }
+
+        setTimeout(() => {
+          const feedback = document.getElementById('answerFeedback');
+          if (feedback) feedback.style.display = 'none';
+          document.querySelectorAll('.option').forEach(option => {
+            option.classList.remove('selected', 'correct', 'wrong');
+            option.style.pointerEvents = 'auto';
+          });
+        }, 1500);
+      });
+
+      socket.on('leaderboardUpdate', (leaderboard) => {
+        updateRank(leaderboard);
+      });
+    }
+
+    // 加入游戏
+    function joinGame() {
+      console.log('joinGame 函数被调用'); // 添加调试日志
+
+      const name = nameInput.value.trim();
+      const studentId = studentIdInput.value.trim();
+      const errorMessage = document.getElementById('errorMessage');
+
+      console.log('姓名:', name, '学号:', studentId); // 添加调试日志
+
+      errorMessage.style.display = 'none';
+      errorMessage.textContent = '';
+
+      if (!name || !studentId) {
+        console.log('姓名或学号为空');
+        errorMessage.textContent = '请填写完整的姓名和学号';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      if (name.length < 2) {
+        console.log('姓名长度不足');
+        errorMessage.textContent = '姓名至少需要2个字符';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      if (studentId.length < 5) {
+        console.log('学号长度不足');
+        errorMessage.textContent = '学号格式不正确，至少5位';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      // 检查Socket连接状态
+      if (!socket || !socket.connected) {
+        console.error('Socket未连接');
+        errorMessage.textContent = '网络连接失败，请刷新页面重试';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      log(`尝试加入游戏，姓名: ${name}, 学号: ${studentId}, 房间: ${roomId}`);
+      console.log('准备发送joinGame事件');
+
+      try {
+        socket.emit('joinGame', {
+          name,
+          studentId,
+          roomId
+        });
+        console.log('joinGame事件已发送');
+      } catch (error) {
+        console.error('发送joinGame事件时出错:', error);
+        errorMessage.textContent = '发送请求失败，请重试';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      const joinBtn = document.querySelector('.btn');
+      joinBtn.disabled = true;
+      joinBtn.textContent = '加入中...';
+      console.log('按钮状态已更新');
+    }
+
+    // 显示题目
+    function showQuestion(question, questionNumber, totalQuestions, timeLimit = 10) {
+      currentQuestion = question;
+      questionStartTime = Date.now();
+      timeLeft = timeLimit;
+
+      if (questionTimer) {
+        clearInterval(questionTimer);
+        questionTimer = null;
+      }
+
+      const questionNumberEl = document.getElementById('questionNumber');
+      const questionTextEl = document.getElementById('questionText');
+      const answerFeedbackEl = document.getElementById('answerFeedback');
+      const questionTimerEl = document.getElementById('questionTimer');
+
+      if (questionNumberEl) questionNumberEl.textContent = `题目 ${questionNumber}/${totalQuestions}`;
+      if (questionTextEl) questionTextEl.textContent = question.question;
+      if (answerFeedbackEl) answerFeedbackEl.style.display = 'none';
+
+      // 重置倒计时器样式和页面状态
+      if (questionTimerEl) {
+        questionTimerEl.classList.remove('warning', 'danger');
+        questionTimerEl.innerHTML = `<span class="timer-text">${timeLeft}s</span>`;
+      }
+
+      // 清除页面和容器的紧急状态
+      document.body.classList.remove('timer-warning', 'timer-danger');
+      const quizContainer = document.getElementById('quizContainer');
+      if (quizContainer) {
+        quizContainer.classList.remove('timer-danger');
+      }
+
+      const optionsContainer = document.getElementById('optionsContainer');
+      if (optionsContainer) {
+        optionsContainer.innerHTML = '';
+
+        question.options.forEach((option, index) => {
+          const optionElement = document.createElement('div');
+          optionElement.className = 'option';
+          optionElement.onclick = () => selectOption(index);
+
+          optionElement.innerHTML = `
+            <span class="option-letter">${String.fromCharCode(65 + index)}</span>
+            <span>${option}</span>
+          `;
+
+          optionsContainer.appendChild(optionElement);
+        });
+      }
+
+      startQuestionTimer();
+    }
+
+    function selectOption(index) {
+      document.querySelectorAll('.option').forEach(option => {
+        option.classList.remove('selected');
+      });
+
+      const selectedOption = document.querySelectorAll('.option')[index];
+      if (selectedOption) {
+        selectedOption.classList.add('selected');
+      }
+
+      submitAnswer(index);
+    }
+
+    function submitAnswer(answer) {
+      if (!currentQuestion || !socket) return;
+
+      const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
+
+      if (questionTimer) {
+        clearInterval(questionTimer);
+        questionTimer = null;
+      }
+
+      socket.emit('submitAnswer', {
+        questionId: currentQuestion.id,
+        answer: answer,
+        timeSpent: timeSpent
+      });
+    }
+
+    function showAnswerFeedback(data) {
+      const feedback = document.getElementById('answerFeedback');
+      const options = document.querySelectorAll('.option');
+
+      options.forEach((option, index) => {
+        if (index === data.correctAnswer) {
+          option.classList.add('correct');
+        } else if (option.classList.contains('selected') && index !== data.correctAnswer) {
+          option.classList.add('wrong');
+        }
+      });
+
+      if (feedback) {
+        feedback.className = `answer-feedback ${data.isCorrect ? 'correct' : 'wrong'}`;
+        const pointsText = data.points > 0 ? `+${data.points}分` : `${data.points}分`;
+        feedback.innerHTML = `
+          <strong>${data.isCorrect ? '✅ 回答正确!' : '❌ 回答错误'}</strong><br>
+          ${data.isCorrect ? `恭喜您获得 ${pointsText}!` : `扣除15分，正确答案是 ${String.fromCharCode(65 + data.correctAnswer)}`}<br>
+          当前总分: ${data.totalScore}分
+        `;
+        feedback.style.display = 'block';
+      }
+
+      options.forEach(option => {
+        option.style.pointerEvents = 'none';
+      });
+    }
+
+    function showTimeUpFeedback(data) {
+      const feedback = document.getElementById('answerFeedback');
+      const options = document.querySelectorAll('.option');
+
+      options.forEach((option, index) => {
+        if (index === data.correctAnswer) {
+          option.classList.add('correct');
+        }
+      });
+
+      if (feedback) {
+        feedback.className = 'answer-feedback wrong';
+        feedback.innerHTML = `
+          <strong>⏰ ${data.message}</strong><br>
+          扣除15分，正确答案是 ${String.fromCharCode(65 + data.correctAnswer)}<br>
+          当前总分: ${data.totalScore}分
+        `;
+        feedback.style.display = 'block';
+      }
+
+      options.forEach(option => {
+        option.style.pointerEvents = 'none';
+      });
+    }
+
+    function startQuestionTimer() {
+      const timerElement = document.getElementById('questionTimer');
+      if (!timerElement) return;
+
+      // 为倒计时器添加文字容器
+      timerElement.innerHTML = `<span class="timer-text">${timeLeft}s</span>`;
+
+      questionTimer = setInterval(() => {
+        timeLeft--;
+
+        // 更新倒计时显示
+        const timerText = timerElement.querySelector('.timer-text');
+        if (timerText) {
+          timerText.textContent = `${timeLeft}s`;
+        }
+
+        // 移除之前的状态类
+        timerElement.classList.remove('warning', 'danger');
+        document.body.classList.remove('timer-warning', 'timer-danger');
+        const quizContainer = document.getElementById('quizContainer');
+        if (quizContainer) {
+          quizContainer.classList.remove('timer-danger');
+        }
+
+        // 根据剩余时间应用不同的样式和动画
+        if (timeLeft <= 3) {
+          // 最后3秒：危险状态，强烈闪烁和跳动
+          timerElement.classList.add('danger');
+          document.body.classList.add('timer-danger');
+          if (quizContainer) {
+            quizContainer.classList.add('timer-danger');
+          }
+
+          // 添加震动效果（如果支持）
+          if (navigator.vibrate) {
+            navigator.vibrate(100);
+          }
+
+          // 播放紧急音效提示（可选）
+          console.log(`⚠️ 倒计时警告: ${timeLeft}秒`);
+
+        } else if (timeLeft <= 5) {
+          // 5秒内：警告状态，心跳动画
+          timerElement.classList.add('warning');
+          document.body.classList.add('timer-warning');
+
+        } else {
+          // 正常状态：温和脉动
+          // 默认样式，不需要额外类
+        }
+
+        // 倒计时结束
+        if (timeLeft <= 0) {
+          clearInterval(questionTimer);
+          questionTimer = null;
+
+          // 最终闪烁提示
+          timerElement.classList.add('danger');
+          timerElement.querySelector('.timer-text').textContent = '时间到!';
+          document.body.classList.add('timer-danger');
+          if (quizContainer) {
+            quizContainer.classList.add('timer-danger');
+          }
+
+          // 震动提示时间到
+          if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+          }
+        }
+      }, 1000);
+    }
+
+    function updateScore(score) {
+      const scoreDisplays = document.querySelectorAll('#scoreDisplay');
+      scoreDisplays.forEach(element => {
+        if (element) element.textContent = score;
+      });
+
+      const currentScoreElement = document.getElementById('currentScore');
+      if (currentScoreElement) {
+        const scoreEl = currentScoreElement.querySelector('.score');
+        if (scoreEl) scoreEl.textContent = score;
+      }
+    }
+
+    function updateRank(leaderboard) {
+      if (!currentUser) return;
+
+      const myRank = leaderboard.findIndex(user => user.studentId === currentUser.studentId) + 1;
+      const rankDisplays = document.querySelectorAll('#rankDisplay');
+      rankDisplays.forEach(element => {
+        if (element) element.textContent = myRank > 0 ? `第${myRank}名` : '-';
+      });
+    }
+
+    // 移动端兼容性处理
+    document.addEventListener('touchstart', function () { }, true);
+  </script>
+</body>
+
+</html>

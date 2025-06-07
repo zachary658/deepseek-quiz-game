@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>答题游戏管理后台</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      background: #f5f6fa;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .status {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 10px 20px;
+      border-radius: 25px;
+      display: inline-block;
+      margin-top: 10px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .control-panel {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .control-panel h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn.danger {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+      box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn.danger:hover {
+      box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+    }
+
+    .stats {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-card .label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .leaderboard {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .leaderboard h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .live-indicator {
+      width: 10px;
+      height: 10px;
+      background: #00ff00;
+      border-radius: 50%;
+      margin-left: 10px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .leaderboard-table th,
+    .leaderboard-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .leaderboard-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .rank-1 {
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      color: #333;
+    }
+
+    .rank-2 {
+      background: linear-gradient(135deg, #c0c0c0 0%, #d4d4d4 100%);
+      color: #333;
+    }
+
+    .rank-3 {
+      background: linear-gradient(135deg, #cd7f32 0%, #d4a574 100%);
+      color: white;
+    }
+
+    .timer {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin: 15px 0;
+      display: none;
+    }
+
+    .timer.active {
+      display: block;
+      animation: timerPulse 1s infinite;
+    }
+
+    @keyframes timerPulse {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.02);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .home-link {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 25px;
+      text-decoration: none;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .home-link:hover {
+      background: white;
+      color: #333;
+      transform: translateY(-2px);
+    }
+
+    .users-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+
+    .user-item {
+      background: #f8f9fa;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin: 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-item .user-info {
+      display: flex;
+      align-items: center;
+    }
+
+    .user-item .user-avatar {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.8rem;
+      margin-right: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a href="/" class="home-link">🏠 返回首页</a>
+
+  <div class="header">
+    <h1>🎮 答题游戏管理后台</h1>
+    <div class="status" id="gameStatus">
+      游戏未开始
+    </div>
+  </div>
+
+  <div class="timer" id="timer">
+    剩余时间: <span id="timeLeft">03:00</span>
+  </div>
+
+  <div class="dashboard">
+    <div class="control-panel">
+      <h2>游戏控制</h2>
+      <button class="btn" id="startGameBtn" onclick="startGame()">
+        开始游戏
+      </button>
+      <button class="btn danger" id="endGameBtn" onclick="endGame()" disabled>
+        结束游戏
+      </button>
+      <button class="btn" id="resetGameBtn" onclick="resetGame()"
+        style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); margin-top: 15px;">
+        重置游戏
+      </button>
+      <div
+        style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 0.9rem; color: #856404;">
+        <strong>注意：</strong>重置游戏将清除所有用户数据，请谨慎使用！
+      </div>
+
+      <h3 style="margin-top: 30px; margin-bottom: 15px;">在线用户</h3>
+      <div class="users-list" id="usersList">
+        <p style="color: #666; text-align: center;">暂无在线用户</p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <h2>游戏统计</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>在线用户</h3>
+          <div class="stat-number" id="onlineUsers">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>游戏状态</h3>
+          <div class="stat-number" id="gameStatus">未开始</div>
+        </div>
+        <div class="stat-card">
+          <h3>当前题目</h3>
+          <div class="stat-number" id="currentQuestion">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>参与用户</h2>
+    <div class="user-list" id="userList">
+      <!-- 用户列表将在这里显示 -->
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🏆 实时排行榜 (前10名)</h2>
+    <div class="leaderboard" id="leaderboard">
+      <!-- 排行榜将在这里显示 -->
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let gameTimer = null;
+    let timeLeft = 180; // 3分钟
+
+    // 页面元素
+    const gameStatusElement = document.getElementById('gameStatus');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const endGameBtn = document.getElementById('endGameBtn');
+    const timer = document.getElementById('timer');
+    const timeLeftSpan = document.getElementById('timeLeft');
+    const usersList = document.getElementById('usersList');
+    const onlineUsersCount = document.getElementById('onlineUsers');
+    const userListSection = document.getElementById('userList');
+    const leaderboardSection = document.getElementById('leaderboard');
+    const currentQuestionElement = document.getElementById('currentQuestion');
+
+    let users = [];
+    let currentQuestion = 0;
+    let isGameActive = false;
+
+    // Socket事件监听
+    socket.on('userJoined', (user) => {
+      const existingIndex = users.findIndex(u => u.id === user.id);
+      if (existingIndex === -1) {
+        users.push(user);
+        updateUsersDisplay();
+        updateStats();
+      }
+    });
+
+    socket.on('userAnswered', (data) => {
+      // 更新用户答题情况
+      const userIndex = users.findIndex(u => u.studentId === data.user.studentId);
+      if (userIndex !== -1) {
+        users[userIndex] = { ...users[userIndex], ...data.user };
+      }
+
+      // 显示答题通知
+      showAnswerNotification(data);
+      updateUsersDisplay();
+      updateStats();
+    });
+
+    socket.on('gameStarted', (data) => {
+      isGameActive = true;
+      gameStatusElement.textContent = '游戏进行中';
+      startGameBtn.disabled = true;
+      endGameBtn.disabled = false;
+      timer.classList.add('active');
+
+      if (data.questionNumber) {
+        currentQuestion = data.questionNumber;
+        currentQuestionElement.textContent = `${data.questionNumber}/${data.totalQuestions}`;
+      }
+
+      // 开始倒计时
+      startTimer();
+    });
+
+    socket.on('gameEnded', (data) => {
+      isGameActive = false;
+      gameStatusElement.textContent = '游戏已结束';
+      startGameBtn.disabled = false;
+      endGameBtn.disabled = true;
+      timer.classList.remove('active');
+      currentQuestionElement.textContent = '-';
+
+      if (gameTimer) {
+        clearInterval(gameTimer);
+      }
+    });
+
+    socket.on('gameReset', (data) => {
+      // 重置所有状态
+      isGameActive = false;
+      users = [];
+      currentQuestion = 0;
+
+      // 重置UI
+      gameStatusElement.textContent = '游戏未开始';
+      startGameBtn.disabled = false;
+      endGameBtn.disabled = true;
+      timer.classList.remove('active');
+      currentQuestionElement.textContent = '-';
+
+      if (gameTimer) {
+        clearInterval(gameTimer);
+      }
+
+      // 更新显示
+      updateUsersDisplay();
+      updateStats();
+      leaderboardSection.innerHTML = '<p style="color: #666; text-align: center;">暂无排行数据</p>';
+
+      // 显示重置通知
+      alert('游戏已重置！所有用户数据已清除。');
+    });
+
+    socket.on('leaderboardUpdate', (leaderboard) => {
+      updateLeaderboard(leaderboard);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('连接断开:', reason);
+    });
+
+    // 开始游戏
+    function startGame() {
+      socket.emit('startGame');
+    }
+
+    // 结束游戏
+    function endGame() {
+      socket.emit('endGame');
+    }
+
+    // 重置游戏
+    function resetGame() {
+      socket.emit('resetGame');
+    }
+
+    // 更新用户显示
+    function updateUsersDisplay() {
+      if (users.length === 0) {
+        usersList.innerHTML = '<p style="color: #666; text-align: center;">暂无在线用户</p>';
+        userListSection.innerHTML = '<p style="color: #666; text-align: center;">暂无参与用户</p>';
+        return;
+      }
+
+      // 更新侧边栏用户列表
+      usersList.innerHTML = users.map(user => {
+        const progress = user.currentQuestion || 0;
+        const total = user.totalQuestions || 10;
+        const progressPercent = Math.round((progress / total) * 100);
+
+        return `
+          <div class="user-item">
+            <div class="user-info">
+              <div class="user-avatar">${user.name.charAt(0)}</div>
+              <div>
+                <div style="font-weight: bold;">${user.name}</div>
+                <div style="font-size: 0.8rem; color: #666;">${user.studentId}</div>
+                <div style="font-size: 0.7rem; color: ${progress === total ? '#4caf50' : '#2196f3'};">
+                  进度: ${progress}/${total} (${progressPercent}%)
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="color: ${user.score >= 0 ? '#4caf50' : '#f44336'}; font-weight: bold;">${user.score || 0}分</div>
+              <div style="font-size: 0.7rem; color: #666;">
+                ${progress === total ? '已完成' : '答题中'}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 更新详细用户列表
+      userListSection.innerHTML = `
+        <div style="display: grid; gap: 15px;">
+          ${users.map(user => {
+        const progress = user.currentQuestion || 0;
+        const total = user.totalQuestions || 10;
+        const progressPercent = Math.round((progress / total) * 100);
+        const correctAnswers = user.correctAnswers || 0;
+        const accuracy = progress > 0 ? Math.round((correctAnswers / progress) * 100) : 0;
+
+        return `
+              <div style="background: white; padding: 20px; border-radius: 15px; border-left: 5px solid ${progress === total ? '#4caf50' : '#2196f3'}; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                  <div>
+                    <div style="font-weight: bold; font-size: 1.2rem; color: #333;">${user.name}</div>
+                    <div style="color: #666; margin: 5px 0;">学号: ${user.studentId}</div>
+                    <div style="color: #666; font-size: 0.9rem;">
+                      加入时间: ${new Date(user.joinTime).toLocaleTimeString()}
+                    </div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 2rem; font-weight: bold; color: ${user.score >= 0 ? '#4caf50' : '#f44336'};">${user.score || 0}分</div>
+                    <div style="font-size: 0.9rem; color: #666;">
+                      ${progress === total ? '✅ 已完成' : '⏳ 答题中'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px;">
+                  <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="font-size: 1.3rem; font-weight: bold; color: #2196f3;">${progress}</div>
+                    <div style="font-size: 0.8rem; color: #666;">已答题数</div>
+                  </div>
+                  <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="font-size: 1.3rem; font-weight: bold; color: #4caf50;">${correctAnswers}</div>
+                    <div style="font-size: 0.8rem; color: #666;">正确题数</div>
+                  </div>
+                  <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="font-size: 1.3rem; font-weight: bold; color: #ff9800;">${accuracy}%</div>
+                    <div style="font-size: 0.8rem; color: #666;">正确率</div>
+                  </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span style="font-size: 0.9rem; color: #666;">答题进度</span>
+                    <span style="font-size: 0.9rem; color: #666;">${progress}/${total}</span>
+                  </div>
+                  <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: ${progressPercent}%; transition: width 0.3s ease;"></div>
+                  </div>
+                </div>
+              </div>
+            `;
+      }).join('')}
+        </div>
+      `;
+    }
+
+    // 更新排行榜
+    function updateLeaderboard(leaderboard) {
+      if (!leaderboard || leaderboard.length === 0) {
+        leaderboardSection.innerHTML = `
+          <div style="text-align: center; padding: 60px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; color: white;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">🏆</div>
+            <h3 style="margin: 0; font-size: 1.5rem;">暂无排行数据</h3>
+            <p style="margin: 10px 0 0 0; opacity: 0.8;">等待用户完成答题...</p>
+          </div>
+        `;
+        return;
+      }
+
+      leaderboardSection.innerHTML = `
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 20px; margin-bottom: 20px;">
+          <div style="text-align: center; color: white; margin-bottom: 30px;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🏆</div>
+            <h2 style="margin: 0; font-size: 2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">荣誉榜</h2>
+            <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 1.1rem;">TOP ${Math.min(leaderboard.length, 10)} 排行榜</p>
+          </div>
+        </div>
+        
+        <div style="display: grid; gap: 20px;">
+          ${leaderboard.slice(0, 10).map((user, index) => {
+        const isTopThree = index < 3;
+        const rank = index + 1;
+
+        // 不同排名的配色方案
+        let bgGradient, textColor, rankIcon, shadowColor, borderColor;
+
+        if (index === 0) {
+          bgGradient = 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%)';
+          textColor = '#8B4513';
+          rankIcon = '👑';
+          shadowColor = 'rgba(255, 215, 0, 0.4)';
+          borderColor = '#FFD700';
+        } else if (index === 1) {
+          bgGradient = 'linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 50%, #C0C0C0 100%)';
+          textColor = '#4A4A4A';
+          rankIcon = '🥈';
+          shadowColor = 'rgba(192, 192, 192, 0.4)';
+          borderColor = '#C0C0C0';
+        } else if (index === 2) {
+          bgGradient = 'linear-gradient(135deg, #CD7F32 0%, #D2691E 50%, #CD7F32 100%)';
+          textColor = '#FFFFFF';
+          rankIcon = '🥉';
+          shadowColor = 'rgba(205, 127, 50, 0.4)';
+          borderColor = '#CD7F32';
+        } else {
+          bgGradient = 'linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)';
+          textColor = '#333333';
+          rankIcon = `<span style="font-weight: bold; font-size: 1.2rem;">${rank}</span>`;
+          shadowColor = 'rgba(0, 0, 0, 0.1)';
+          borderColor = '#E9ECEF';
+        }
+
+        return `
+              <div style="
+                background: ${bgGradient};
+                border: 2px solid ${borderColor};
+                border-radius: 20px;
+                padding: 25px;
+                box-shadow: 0 10px 30px ${shadowColor}, 0 1px 8px rgba(0,0,0,0.1);
+                transform: ${isTopThree ? 'scale(1.02)' : 'scale(1)'};
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+                ${isTopThree ? 'margin: 10px 0;' : ''}
+              " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(${isTopThree ? '1.02' : '1'})'">
+                
+                ${isTopThree ? `
+                  <div style="
+                    position: absolute;
+                    top: -10px;
+                    right: -10px;
+                    background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+                    color: white;
+                    padding: 8px 15px;
+                    border-radius: 20px;
+                    font-size: 0.8rem;
+                    font-weight: bold;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                  ">TOP ${rank}</div>
+                ` : ''}
+                
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; align-items: center; flex: 1;">
+                    <div style="
+                      background: ${isTopThree ? 'rgba(255,255,255,0.3)' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
+                      color: ${isTopThree ? textColor : 'white'};
+                      width: 60px;
+                      height: 60px;
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 1.5rem;
+                      font-weight: bold;
+                      margin-right: 20px;
+                      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                      border: 3px solid ${isTopThree ? 'rgba(255,255,255,0.5)' : 'transparent'};
+                    ">
+                      ${rankIcon}
+                    </div>
+                    
+                    <div style="flex: 1;">
+                      <div style="
+                        font-size: 1.4rem;
+                        font-weight: bold;
+                        color: ${textColor};
+                        margin-bottom: 5px;
+                        text-shadow: ${isTopThree ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                      ">${user.name}</div>
+                      <div style="
+                        font-size: 1rem;
+                        color: ${isTopThree ? textColor : '#666'};
+                        opacity: 0.8;
+                        margin-bottom: 8px;
+                      ">学号: ${user.studentId}</div>
+                      <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 15px;
+                        font-size: 0.9rem;
+                        color: ${isTopThree ? textColor : '#666'};
+                        opacity: 0.9;
+                      ">
+                        <span>✅ ${user.correctAnswers}题正确</span>
+                        <span>📊 ${user.totalAnswers}题总计</span>
+                        <span>🎯 ${Math.round((user.correctAnswers / user.totalAnswers) * 100) || 0}%正确率</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style="text-align: right; margin-left: 20px;">
+                    <div style="
+                      font-size: ${isTopThree ? '2.5rem' : '2rem'};
+                      font-weight: bold;
+                      color: ${user.score >= 0 ? '#4CAF50' : '#F44336'};
+                      margin-bottom: 5px;
+                      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                      filter: ${isTopThree ? 'drop-shadow(0 0 8px rgba(255,255,255,0.3))' : 'none'};
+                    ">${user.score}</div>
+                    <div style="
+                      font-size: 1rem;
+                      color: ${isTopThree ? textColor : '#666'};
+                      opacity: 0.8;
+                      font-weight: 500;
+                    ">分数</div>
+                  </div>
+                </div>
+                
+                ${isTopThree ? `
+                  <div style="
+                    margin-top: 20px;
+                    padding: 15px;
+                    background: rgba(255,255,255,0.2);
+                    border-radius: 12px;
+                    text-align: center;
+                  ">
+                    <div style="
+                      font-size: 0.9rem;
+                      color: ${textColor};
+                      font-weight: 500;
+                      margin-bottom: 8px;
+                    ">🎊 恭喜进入前三名！ 🎊</div>
+                    <div style="
+                      font-size: 0.8rem;
+                      color: ${textColor};
+                      opacity: 0.9;
+                    ">答题进度: ${user.currentQuestion || 0}/${user.totalQuestions || 10}</div>
+                  </div>
+                ` : `
+                  <div style="
+                    margin-top: 15px;
+                    height: 4px;
+                    background: #E9ECEF;
+                    border-radius: 2px;
+                    overflow: hidden;
+                  ">
+                    <div style="
+                      height: 100%;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      width: ${Math.round(((user.currentQuestion || 0) / (user.totalQuestions || 10)) * 100)}%;
+                      transition: width 0.3s ease;
+                    "></div>
+                  </div>
+                `}
+              </div>
+            `;
+      }).join('')}
+        </div>
+        
+        ${leaderboard.length > 10 ? `
+          <div style="
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            color: #666;
+          ">
+            <div style="font-size: 1rem; font-weight: 500;">还有 ${leaderboard.length - 10} 位选手未显示</div>
+            <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">仅显示前10名</div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    // 更新统计信息
+    function updateStats() {
+      onlineUsersCount.textContent = users.length;
+    }
+
+    // 开始计时器
+    function startTimer() {
+      timeLeft = 180;
+
+      gameTimer = setInterval(() => {
+        timeLeft--;
+
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timeLeftSpan.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeLeft <= 0) {
+          clearInterval(gameTimer);
+          // 游戏时间结束，自动结束游戏
+          endGame();
+        }
+      }, 1000);
+    }
+
+    // 显示答题通知
+    function showAnswerNotification(data) {
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: ${data.isCorrect ? '#4caf50' : '#f44336'};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        z-index: 1000;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+      `;
+
+      notification.innerHTML = `
+        <div style="font-weight: bold;">${data.user.name}(${data.user.studentId})</div>
+        <div>第${data.questionNumber}题 ${data.isCorrect ? '✅ 正确' : '❌ 错误'}</div>
+        <div>得分: ${data.points > 0 ? '+' : ''}${data.points}分 | 总分: ${data.user.score}分</div>
+      `;
+
+      document.body.appendChild(notification);
+
+      // 动画显示
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+
+      // 3秒后移除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    // 页面加载时获取当前状态
+    window.addEventListener('load', () => {
+      // 可以在这里添加获取当前游戏状态的逻辑
+      console.log('管理后台已加载');
+    });
+  </script>
+</body>
+
+</html>
